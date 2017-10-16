@@ -21,8 +21,8 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& msg)
 
   // Convert sensor_msgs::PointCloud2 -> pcl::PointCloud<pcl::PointXYZ>
   pcl::fromROSMsg(*msg, *cloud);
-  pclViewer();
   printf("pcl::PointCloud<pcl::PointXYZ>: width = %d, height = %d\n", cloud->width, cloud->height);
+  pclViewer();
   //printf("cloud.points.size() = %lu\n",cloud.points.size());
   //printf("[x, y, z] = [%d, %d, %d]",cloud.points[0].x, cloud.y, cloud.z);
   //BOOST_FOREACH (const pcl::PointXYZ& pt, msg->points) printf ("\t(%f, %f, %f)\n", pt.x, pt.y, pt.z);
@@ -41,11 +41,11 @@ void pclViewer()
         int vp[2];
         pcl::visualization::PCLVisualizer viewer("Viewer");
         pcl::visualization::PointCloudColorHandlerRGBAField<pcl::PointXYZRGBA> rgba(cloud);
-        viewer.createViewPort(0.0, 0.0, 0.5, 1.0, vp[0]);
-        viewer.createViewPort(0.5, 0.0, 1.0, 1.0, vp[1]);
-        viewer.addPointCloud(cloud, "cloud_without_color_handler", vp[0]);    // 透明度が反映されない
+        //viewer.createViewPort(0.0, 0.0, 0.5, 1.0, vp[0]);
+        viewer.createViewPort(0.0, 0.0, 1.0, 1.0, vp[1]);
+        //viewer.addPointCloud(cloud, "cloud_without_color_handler", vp[0]);    // 透明度が反映されない
         viewer.addPointCloud(cloud, rgba, "cloud_with_color_handler", vp[1]);    // 透明度が反映される
-        viewer.addText("Without color handler", 10, 10, "text_without_color_handler", vp[0]);
+        //viewer.addText("Without color handler", 10, 10, "text_without_color_handler", vp[0]);
         viewer.addText("With color handler", 10, 10, "text_with_color_handler", vp[1]);
         viewer.spin();
     }
