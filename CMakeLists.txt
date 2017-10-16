@@ -199,5 +199,8 @@ include_directories(
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-add_executable(image_prosessing src/pcl_subscribing.cpp)
+add_executable(pcl_sub src/pcl_subscribing.cpp)
+target_link_libraries(pcl_sub ${catkin_LIBRARIES})
+
+add_executable(image_prosessing src/main.cpp)
 target_link_libraries(image_prosessing ${catkin_LIBRARIES})
