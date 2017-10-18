@@ -1,20 +1,30 @@
+// ROS Header
 #include <ros/ros.h>
-#include <pcl_ros/point_cloud.h>
-#include <pcl/point_types.h>
-//#include <boost/foreach.hpp>
 #include <sensor_msgs/PointCloud2.h>
+#include <pcl_ros/point_cloud.h>
+// PCL Header
+#include <pcl/point_types.h>
 #include <pcl/visualization/pcl_visualizer.h>
-//#include <pcl/visualization/cloud_viewer.h>
+// C++ Header
 #include <iostream>
-//#include <boost/thread/thread.hpp>
+#include <boost/thread/thread.hpp>
 
+// Prototype
 void callback();
 void pclViewer();
 
-//pcl::PointCloud<pcl::PointXYZRGB> cloud;
-pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
-//pcl::PointCloud<PointType>::Ptr cloud( new pcl::PointCloud<PointType> );
+std::thread zed_callback;
 
+// Global variable
+pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+pcl::visualization::PCLVisualizer viewer("Viewer");
+
+int vp;
+pcl::visualization::PointCloudColorHandlerRGBAField<pcl::PointXYZRGBA> rgba(cloud);
+viewer.createViewPort(0.0, 0.0, 1.0, 1.0, vp);
+viewer.addPointCloud(cloud, rgba, "cloud_with_color_handler", vp);
+
+// ros::Subscriber callback function
 void callback(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
   printf("sensor_msgs::PiontCloud2: width = %d, height = %d\n", msg->width, msg->height);
@@ -22,7 +32,7 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& msg)
   // Convert sensor_msgs::PointCloud2 -> pcl::PointCloud<pcl::PointXYZ>
   pcl::fromROSMsg(*msg, *cloud);
   printf("pcl::PointCloud<pcl::PointXYZ>: width = %d, height = %d\n", cloud->width, cloud->height);
-  pclViewer();
+  zed_callback = std::thread(pclViewer);
   //printf("cloud.points.size() = %lu\n",cloud.points.size());
   //printf("[x, y, z] = [%d, %d, %d]",cloud.points[0].x, cloud.y, cloud.z);
   //BOOST_FOREACH (const pcl::PointXYZ& pt, msg->points) printf ("\t(%f, %f, %f)\n", pt.x, pt.y, pt.z);
@@ -31,23 +41,17 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& msg)
   //viewer.updatePointCloud( cloud, msg );
 }
 
+// PCL Visulization function
 void pclViewer()
 {
     try
     {
-        // pcl::visualization::CloudViewer viewer("Cloud Viewer");
-        // viewer.showCloud(cloud);
-        // 表示
-        int vp[2];
-        pcl::visualization::PCLVisualizer viewer("Viewer");
-        pcl::visualization::PointCloudColorHandlerRGBAField<pcl::PointXYZRGBA> rgba(cloud);
-        //viewer.createViewPort(0.0, 0.0, 0.5, 1.0, vp[0]);
-        viewer.createViewPort(0.0, 0.0, 1.0, 1.0, vp[1]);
-        //viewer.addPointCloud(cloud, "cloud_without_color_handler", vp[0]);    // 透明度が反映されない
-        viewer.addPointCloud(cloud, rgba, "cloud_with_color_handler", vp[1]);    // 透明度が反映される
-        //viewer.addText("Without color handler", 10, 10, "text_without_color_handler", vp[0]);
-        viewer.addText("With color handler", 10, 10, "text_with_color_handler", vp[1]);
-        viewer.spin();
+	while (!viewer.wasStopped() )
+	{
+            viewer.updatePointCloud( cloud );
+            //viewer.spinOnce(100);
+	    //boost::this_thread::sleep(boost::posix_time::microseconds(1000));
+	}
     }
     catch( std::exception& ex )
     {
@@ -55,10 +59,13 @@ void pclViewer()
     }
 }
 
+// Main function
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "sub_pcl");
-  ros::NodeHandle nh;
-  ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/zed/point_cloud/cloud_registered", 1, callback);
+  // ROS Initialization
+  ros::init(argc, argv, "sub_pcl"); // Node
+  ros::NodeHandle nh;               // Handle
+  ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/zed/point_cloud/cloud_registered", 1, callback); // Subscriber
   ros::spin();
+  return 0;
 }
