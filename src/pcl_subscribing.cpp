@@ -1,29 +1,95 @@
 // ROS Header
 #include <ros/ros.h>
+// PCL
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_ros/point_cloud.h>
-// PCL Header
 #include <pcl/point_types.h>
-#include <pcl/visualization/pcl_visualizer.h>
+#include <pcl_conversions/pcl_conversions.h>
+#include <pcl/point_cloud.h>
+#include <pcl/sample_consensus/model_types.h>
+#include <pcl/sample_consensus/method_types.h>
+#include <pcl/segmentation/sac_segmentation.h>
+#include <pcl/segmentation/organized_multi_plane_segmentation.h>
 // C++ Header
 #include <iostream>
 
+ros::Publisher pub;
+
 // Prototype
 void callback();
+pcl::PointCloud<pcl::PointXYZRGBA> planar_segmentation(pcl::PointCloud<pcl::PointXYZRGBA> input);
 
 // Global variable
-pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
+//pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
 
 // ros::Subscriber callback function
 void callback(const sensor_msgs::PointCloud2ConstPtr& msg)
 {
     //printf("sensor_msgs::PiontCloud2: width = %d, height = %d\n", msg->width, msg->height);
 
+    pcl::PointCloud<pcl::PointXYZRGBA> cloud;
+    pcl::PointCloud<pcl::PointXYZRGBA> cloud_output;
+
     // Convert sensor_msgs::PointCloud2 -> pcl::PointCloud<pcl::PointXYZ>
-    pcl::fromROSMsg(*msg, *cloud);
+    pcl::fromROSMsg(*msg, cloud);
+
+    cloud_output = planar_segmentation(cloud);
+
+    pub.publish(cloud_output);
+        
+}
+
+pcl::PointCloud<pcl::PointXYZRGBA> planar_segmentation(pcl::PointCloud<pcl::PointXYZRGBA> input)
+{
+
+    pcl::PointCloud<pcl::PointXYZRGBA> output;
+
+    output = input;
+
+    for(size_t i = 0; i < output.points.size(); ++i)
+    {
+        output.points[i].a = 255;
+    }
 
     // show point cloud infomation
-    std::cout << *cloud << std::endl;
+    //std::cout << *cloud << std::endl;
+
+    pcl::ModelCoefficients::Ptr coefficients(new pcl::ModelCoefficients);
+    pcl::PointIndices::Ptr inliers(new pcl::PointIndices);
+    pcl::SACSegmentation<pcl::PointXYZRGBA> seg;
+
+    seg.setOptimizeCoefficients(true);
+    seg.setModelType(pcl::SACMODEL_PLANE);
+    seg.setMethodType(pcl::SAC_RANSAC);
+
+    double dist_th;
+    ros::param::get("dist_th", dist_th);
+    seg.setDistanceThreshold(dist_th);
+
+    seg.setInputCloud(output.makeShared());
+    seg.segment(*inliers, *coefficients);
+    
+    if(inliers->indices.size() == 0)
+    {
+        std::cerr << "Could not estimate a planar model for the given data" << std::endl;
+    }
+    else
+    {
+        for (size_t i = 0; i < inliers->indices.size (); ++i) {
+        // std::cerr << inliers->indices[i] << "    " << cloud.points[inliers->indices[i]].x << "       // << cloud.points[inliers->indices[i]].y << " "
+        // << cloud.points[inliers->indices[i]].z << std::endl;
+        output.points[inliers->indices[i]].r = 0;
+        output.points[inliers->indices[i]].g = 0;
+        output.points[inliers->indices[i]].b = 255;
+        output.points[inliers->indices[i]].a = 255;
+        }
+    }
+
+
+    // save pcd file
+    //pcl::io::savePCDFileASCII ("save.pcd", cloud);
+    
+    return output;
 }
 
 // Main function
@@ -41,6 +107,9 @@ int main(int argc, char** argv)
 
     printf("--- Subscribing Point Cloud  ... \n"); 
     ros::Subscriber sub = nh.subscribe<sensor_msgs::PointCloud2>("/zed/point_cloud/cloud_registered", 1, callback); // Subscriber
+    
+    pub = nh.advertise<pcl::PointCloud<pcl::PointXYZRGBA>>("planar_segmentation", 1);
+    
     ros::spin();
 
     printf("--- Finish !! ---\n");
