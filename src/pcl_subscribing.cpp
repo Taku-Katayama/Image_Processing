@@ -17,7 +17,6 @@ ros::Publisher pub;
 
 // Prototype
 void callback();
-pcl::PointCloud<pcl::PointXYZRGBA> planar_segmentation(pcl::PointCloud<pcl::PointXYZRGBA> input);
 
 // Global variable
 //pcl::PointCloud<pcl::PointXYZRGBA>::Ptr cloud(new pcl::PointCloud<pcl::PointXYZRGBA>);
@@ -28,27 +27,13 @@ void callback(const sensor_msgs::PointCloud2ConstPtr& msg)
     //printf("sensor_msgs::PiontCloud2: width = %d, height = %d\n", msg->width, msg->height);
 
     pcl::PointCloud<pcl::PointXYZRGBA> cloud;
-    pcl::PointCloud<pcl::PointXYZRGBA> cloud_output;
-
+    
     // Convert sensor_msgs::PointCloud2 -> pcl::PointCloud<pcl::PointXYZ>
     pcl::fromROSMsg(*msg, cloud);
 
-    cloud_output = planar_segmentation(cloud);
-
-    pub.publish(cloud_output);
-        
-}
-
-pcl::PointCloud<pcl::PointXYZRGBA> planar_segmentation(pcl::PointCloud<pcl::PointXYZRGBA> input)
-{
-
-    pcl::PointCloud<pcl::PointXYZRGBA> output;
-
-    output = input;
-
-    for(size_t i = 0; i < output.points.size(); ++i)
+    for(size_t i = 0; i < cloud.points.size(); ++i)
     {
-        output.points[i].a = 255;
+        cloud.points[i].a = 255;
     }
 
     // show point cloud infomation
@@ -66,7 +51,7 @@ pcl::PointCloud<pcl::PointXYZRGBA> planar_segmentation(pcl::PointCloud<pcl::Poin
     ros::param::get("dist_th", dist_th);
     seg.setDistanceThreshold(dist_th);
 
-    seg.setInputCloud(output.makeShared());
+    seg.setInputCloud(cloud.makeShared());
     seg.segment(*inliers, *coefficients);
     
     if(inliers->indices.size() == 0)
@@ -78,18 +63,19 @@ pcl::PointCloud<pcl::PointXYZRGBA> planar_segmentation(pcl::PointCloud<pcl::Poin
         for (size_t i = 0; i < inliers->indices.size (); ++i) {
         // std::cerr << inliers->indices[i] << "    " << cloud.points[inliers->indices[i]].x << "       // << cloud.points[inliers->indices[i]].y << " "
         // << cloud.points[inliers->indices[i]].z << std::endl;
-        output.points[inliers->indices[i]].r = 0;
-        output.points[inliers->indices[i]].g = 0;
-        output.points[inliers->indices[i]].b = 255;
-        output.points[inliers->indices[i]].a = 255;
+        cloud.points[inliers->indices[i]].r = 0;
+        cloud.points[inliers->indices[i]].g = 0;
+        cloud.points[inliers->indices[i]].b = 255;
+        cloud.points[inliers->indices[i]].a = 255;
         }
     }
 
 
     // save pcd file
     //pcl::io::savePCDFileASCII ("save.pcd", cloud);
-    
-    return output;
+
+    pub.publish(cloud);
+        
 }
 
 // Main function
