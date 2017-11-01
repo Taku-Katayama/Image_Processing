@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(image_prosessing)
+project(image_processing)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 add_compile_options(-std=c++11)
@@ -202,5 +202,5 @@ include_directories(
 add_executable(pcl_sub src/pcl_subscribing.cpp)
 target_link_libraries(pcl_sub ${catkin_LIBRARIES})
 
-add_executable(image_prosessing src/main.cpp)
-target_link_libraries(image_prosessing ${catkin_LIBRARIES})
+add_executable(main src/main.cpp)
+target_link_libraries(main ${catkin_LIBRARIES})
