@@ -14,6 +14,9 @@ find_package(catkin REQUIRED COMPONENTS
   sensor_msgs
 )
 
+find_package(Eigen3 REQUIRED)
+include_directories(${Eigen_INCLUDE_DIRS})
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -204,3 +207,9 @@ target_link_libraries(pcl_sub ${catkin_LIBRARIES})
 
 add_executable(main src/main.cpp)
 target_link_libraries(main ${catkin_LIBRARIES})
+
+add_executable(voxel src/voxel_tutorial.cpp)
+target_link_libraries(voxel ${catkin_LIBRARIES})
+
+add_executable(seg src/seg_tutorial.cpp)
+target_link_libraries(seg ${catkin_LIBRARIES})
