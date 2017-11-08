@@ -213,3 +213,6 @@ target_link_libraries(voxel ${catkin_LIBRARIES})
 
 add_executable(seg src/seg_tutorial.cpp)
 target_link_libraries(seg ${catkin_LIBRARIES})
+
+add_executable(floor src/floor_detection.cpp)
+target_link_libraries(floor ${catkin_LIBRARIES})
